@@ -10,7 +10,7 @@ public class ConnectionUtils {
 		return MySQLConnUtils.getMySQLConnection();
 	}
 	
-	public static void closequietly(Connection conn) {
+	public static void closeQuietly(Connection conn) {
 		try {
 			conn.close();
 		} catch (Exception e) {

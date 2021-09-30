@@ -1,0 +1,98 @@
+package fr.training.simplewebapp.filter;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.util.Collection;
+import java.util.Map;
+
+import fr.training.simplewebapp.conn.ConnectionUtils;
+import fr.training.simplewebapp.utils.MyUtils;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.annotation.WebFilter;
+import jakarta.servlet.http.HttpServletRequest;
+
+@WebFilter(filterName = "jdbcfilter", urlPatterns = {"/*"})
+public class JDBCFilter implements Filter {
+	
+	public JDBCFilter() {
+	}
+	
+	@Override
+	public void init(FilterConfig fConfig)
+	throws ServletException {
+	}
+	
+	@Override public void destroy() {
+	}
+	
+	//Verify request target is a servlet
+	private boolean needJDBC(HttpServletRequest request) {
+		System.out.println("JDBC Filter");
+		
+		String servletPath = request.getServletPath();
+		
+		String pathInfo = request.getPathInfo();
+		
+		String urlPattern = servletPath;
+		
+		if (pathInfo != null) {
+			urlPattern = servletPath + "/*";
+		}
+		
+		Map<String, ? extends ServletRegistration> servletRegistrations = request.getServletContext().getServletRegistrations();
+		
+		Collection<? extends ServletRegistration> values = servletRegistrations.values();
+		for (ServletRegistration sr : values) {
+			Collection<String> mappings = sr.getMappings();
+			if(mappings.contains(urlPattern)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	
+	@Override
+	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+			throws IOException, ServletException {
+		
+		HttpServletRequest req = (HttpServletRequest) request;
+		
+		if (this.needJDBC(req)) {
+			
+			System.out.println("Open connection for: " + req.getServletPath());
+			
+			Connection conn = null;
+			
+			try {
+				
+				conn = ConnectionUtils.getConnection();
+				conn.setAutoCommit(false);
+				
+				MyUtils.storeConnection(request, conn);
+				
+				chain.doFilter(request, response);
+				
+				conn.commit();
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+				ConnectionUtils.rollbackQuietly(conn);
+				throw new ServletException();
+			} finally {
+				
+				ConnectionUtils.closeQuietly(conn);
+				
+			}
+		} else {
+			chain.doFilter(request, response);
+		}
+	}
+	
+}
