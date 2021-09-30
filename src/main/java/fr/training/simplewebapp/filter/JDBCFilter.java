@@ -17,7 +17,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
 
-@WebFilter(filterName = "jdbcfilter", urlPatterns = {"/*"})
+@WebFilter(filterName = "jdbcFilter", urlPatterns = {"/*"})
 public class JDBCFilter implements Filter {
 	
 	public JDBCFilter() {
